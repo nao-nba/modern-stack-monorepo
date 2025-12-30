@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-export default fu(nction Home() {
+export default function Home() {
   const [data, setData] = useState<{ Hello?: string }>({});
 
   useEffect(() => {
@@ -14,7 +14,6 @@ export default fu(nction Home() {
       .catch((err) => console.error("Error fetching data:", err));
   }, []);
 
-  
   return (
     <main style={{ padding: '2rem', textAlign: 'center' }}>
       <h1>Next.js + FastAPI 疎通テスト</h1>
