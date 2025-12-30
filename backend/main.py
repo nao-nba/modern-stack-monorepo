@@ -5,8 +5,12 @@ from typing import Optional, List
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from fastapi import FastAPI
 
-# 1. 環境変数からURLを取得（docker-composeで設定したもの）
-DATABASE_URL = os.getenv("DATABASE_URL")
+db_user = os.getenv("DB_USER", "admin")
+db_pass = os.getenv("DB_PASSWORD", "password") # secretsから注入される
+db_host = os.getenv("DB_HOST", "localhost")
+db_name = os.getenv("DB_NAME", "appdb")
+
+DATABASE_URL = f"mysql+pymysql://{db_user}:{db_pass}@{db_host}:3306/{db_name}"
 
 # 2. Engineの作成
 engine = create_engine(DATABASE_URL, echo=True) # echo=Trueで発行SQLをログに出す
