@@ -14,6 +14,7 @@ export default fu(nction Home() {
       .catch((err) => console.error("Error fetching data:", err));
   }, []);
 
+  
   return (
     <main style={{ padding: '2rem', textAlign: 'center' }}>
       <h1>Next.js + FastAPI 疎通テスト</h1>
