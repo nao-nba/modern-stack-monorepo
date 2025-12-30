@@ -1,9 +1,9 @@
-# 1. まず「ガワ（本体）」を作る。ルール(ingress)は中には書かず空にする。
+# 1. まず本体を作る。ルール(ingress)は外だし。
 resource "aws_security_group" "ecs_app" {
   name   = "${var.project_name}-ecs-app-sg"
   vpc_id = var.vpc_id
 
-  # egress（外への通信）は共通なのでここに書いてOK
+  # egress（外への通信）は共通
   egress {
     from_port   = 0
     to_port     = 0
@@ -129,7 +129,7 @@ resource "aws_ecs_task_definition" "frontend" {
 }
 
 # --------------------------------------------------------------------------------------------------
-# 2. Backend (FastAPI / Django)
+# 2. Backend (FastAPI)
 # --------------------------------------------------------------------------------------------------
 resource "aws_ecs_task_definition" "backend" {
   family                   = "${var.project_name}-backend"
