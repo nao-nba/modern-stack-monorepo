@@ -75,19 +75,15 @@ resource "aws_service_discovery_service" "mysql" {
 
 # --- 4. CloudWatch Log Groups ---
 resource "aws_cloudwatch_log_group" "frontend" {
-  name = "/ecs/${var.project_name}-frontend"
+  name              = "/ecs/${var.project_name}-frontend"
   retention_in_days = 7
 }
 
 resource "aws_cloudwatch_log_group" "backend" {
-  name = "/ecs/${var.project_name}-backend"
+  name              = "/ecs/${var.project_name}-backend"
   retention_in_days = 7
 }
 
-resource "aws_cloudwatch_log_group" "db" {
-  name = "/ecs/${var.project_name}-db"
-  retention_in_days = 7
-}
 
 # --- 5. Task Definitions ---
 # --------------------------------------------------------------------------------------------------
@@ -99,7 +95,7 @@ resource "aws_ecs_task_definition" "frontend" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "1024" # Next.jsのビルド/実行用に1GB確保
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  execution_role_arn       = var.ecs_task_execution_role_arn
 
   container_definitions = jsonencode([
     {
@@ -137,7 +133,7 @@ resource "aws_ecs_task_definition" "backend" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  execution_role_arn       = var.execution_role_arn
 
   container_definitions = jsonencode([
     {
@@ -150,57 +146,25 @@ resource "aws_ecs_task_definition" "backend" {
           hostPort      = 8000
         }
       ]
+      # 1. 通常の環境変数（パスワード以外）
       environment = [
-        { 
-          name  = "DATABASE_URL", 
-          value = "mysql+pymysql://${var.db_user}:${var.db_password}@db.local:3306/${var.db_name}" 
+        { name = "DB_HOST", value = var.db_host },
+        { name = "DB_NAME", value = "appdb" },
+        { name = "DB_USER", value = "admin" }
+      ],
+      
+      # 2. SSMから安全に取得する環境変数
+      secrets = [
+        {
+          name      = "DB_PASSWORD",
+          valueFrom = var.db_password_arn # SSMのARNを渡す
         }
       ]
+    
       logConfiguration = {
         logDriver = "awslogs"
         options = {
           "awslogs-group"         = aws_cloudwatch_log_group.backend.name
-          "awslogs-region"        = "ap-northeast-1"
-          "awslogs-stream-prefix" = "ecs"
-        }
-      }
-    }
-  ])
-}
-
-# --------------------------------------------------------------------------------------------------
-# 3. MySQL (DB)
-# --------------------------------------------------------------------------------------------------
-resource "aws_ecs_task_definition" "db" {
-  family                   = "${var.project_name}-db"
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-
-  container_definitions = jsonencode([
-    {
-      name      = "db"
-      image     = "mysql:8.0" # Docker Hubから取得
-      essential = true
-      portMappings = [
-        {
-          containerPort = 3306
-          hostPort      = 3306
-        }
-      ]
-      environment = [
-        { name = "MYSQL_DATABASE",      value = var.db_name },
-        { name = "MYSQL_USER",          value = var.db_user },
-        { name = "MYSQL_PASSWORD",      value = var.db_password },
-        { name = "MYSQL_ROOT_PASSWORD", value = var.db_root_password }
-      ]
-      # ※永続化（EFS）が不要なため、mountPointsは削除
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.db.name
           "awslogs-region"        = "ap-northeast-1"
           "awslogs-stream-prefix" = "ecs"
         }
@@ -247,51 +211,3 @@ resource "aws_ecs_service" "backend" {
     container_port   = 8000
   }
 }
-
-# DB Service
-resource "aws_ecs_service" "db" {
-  name            = "${var.project_name}-db"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.db.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
-  network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [aws_security_group.ecs_db.id]
-  }
-  service_registries {
-    registry_arn = aws_service_discovery_service.mysql.arn
-  }
-}
-
-# --- 7. IAM Roles ---
-# (提示いただいた execution_role 関連を配置)
-# 2. ECRをPullしたりログを出したりする標準権限を付与
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-resource "aws_cloudwatch_log_group" "ecs_log_group" {
-  name              = "/ecs/todo-app"
-  retention_in_days = 7 # 7日間保存（料金を抑えるため）
-}
-
-# ECSタスク実行ロールの定義
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "${var.project_name}-ecs-task-execution-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-

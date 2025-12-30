@@ -14,3 +14,8 @@ output "private_subnet_ids" {
 output "alb_dns_name" {
   value = module.alb.alb_dns_name
 }
+
+# サブネットを作成するための材料
+output "az_names" {
+  value = module.network.az_names
+}

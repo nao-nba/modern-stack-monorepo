@@ -54,9 +54,9 @@ resource "aws_lb_target_group" "frontend" {
   target_type = "ip"
 
   health_check {
-    path                = "/" 
+    path                = "/"
     port                = "traffic-port" # 3000が自動で使われる
-    matcher             = "200-399" # Next.jsのリダイレクトを許容する設定
+    matcher             = "200-399"      # Next.jsのリダイレクトを許容する設定
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
@@ -89,7 +89,7 @@ resource "aws_lb_listener_rule" "backend" {
 
   condition {
     path_pattern {
-      values = ["/api/*", "/docs", "/openapi.json", "/health"] # FastAPIへのパスを指定
+      values = ["/api/*", "/docs", "/redoc", "/openapi.json", "/health"] # FastAPIへのパスを指定
     }
   }
 }

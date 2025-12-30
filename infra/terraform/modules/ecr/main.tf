@@ -1,6 +1,6 @@
 # フロントエンド（Next.js）用
 resource "aws_ecr_repository" "frontend" {
-  name = "${var.project_name}-frontend"
+  name                 = "${var.project_name}-frontend"
   image_tag_mutability = "MUTABLE"
   image_scanning_configuration { scan_on_push = true }
   force_delete = true
@@ -8,7 +8,7 @@ resource "aws_ecr_repository" "frontend" {
 
 # バックエンド（FastAPI）用
 resource "aws_ecr_repository" "backend" {
-  name = "${var.project_name}-backend"
+  name                 = "${var.project_name}-backend"
   image_tag_mutability = "MUTABLE"
   image_scanning_configuration { scan_on_push = true }
   force_delete = true
@@ -24,9 +24,9 @@ resource "aws_ecr_lifecycle_policy" "frontend" {
       rulePriority = 1
       description  = "Delete old images more than 5 to keep the storage cost low and maintain clean repository state."
       selection = {
-        tagStatus     = "any"
-        countType     = "imageCountMoreThan"
-        countNumber   = 5
+        tagStatus   = "any"
+        countType   = "imageCountMoreThan"
+        countNumber = 5
       }
       action = {
         type = "expire"
@@ -42,9 +42,9 @@ resource "aws_ecr_lifecycle_policy" "backend" {
       rulePriority = 1
       description  = "Delete old images more than 5 to keep the storage cost low and maintain clean repository state."
       selection = {
-        tagStatus     = "any"
-        countType     = "imageCountMoreThan"
-        countNumber   = 5
+        tagStatus   = "any"
+        countType   = "imageCountMoreThan"
+        countNumber = 5
       }
       action = {
         type = "expire"

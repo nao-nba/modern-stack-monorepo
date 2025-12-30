@@ -4,7 +4,7 @@ variable "region" {
 }
 
 variable "project_name" {
-  type    = string
+  type = string
 }
 
 variable "vpc_cidr" {
